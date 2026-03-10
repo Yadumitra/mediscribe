@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MediScribe — Prescription Detection System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── CSS Variables for consistent theming ── */
+    :root {
+      --dark:       #0d2137;
+      --dark2:      #1a3a5c;
+      --teal:       #2d9e7e;
+      --teal-light: #e8f4f0;
+      --blue:       #3a6bc4;
+      --blue-light: #e8eef8;
+      --amber:      #d4821a;
+      --amber-light:#fdf3e7;
+      --purple:     #7e4ba8;
+      --purple-light:#f5eef8;
+      --red:        #c0392b;
+      --red-light:  #fff5f5;
+      --border:     #dde4ef;
+      --text:       #1a2332;
+      --muted:      #7a8899;
+      --bg:         #f0f4f8;
+      --card:       #ffffff;
+      --radius:     12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: linear-gradient(135deg, var(--dark) 0%, var(--dark2) 55%, #0d5c4a 100%);
+      padding: 22px 32px;
+      position: relative;
+      overflow: hidden;
+    }
+    header::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image: repeating-linear-gradient(45deg, transparent, transparent 30px,
+        rgba(255,255,255,0.015) 30px, rgba(255,255,255,0.015) 31px);
+    }
+    .header-inner {
+      max-width: 1140px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+    }
+    .header-icon {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--teal), #1a7a5c);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 4px 18px rgba(45,158,126,0.4);
+    }
+    header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 24px;
+      color: #fff;
+      letter-spacing: -0.3px;
+    }
+    header p {
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-top: 2px;
+    }
+
+    /* ── MAIN LAYOUT ── */
+    main {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 28px 20px 60px;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 800px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #eef0f4;
+    }
+    .card-header h2 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .card-header p {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+    .card-body { padding: 20px; }
+
+    /* ── DROP ZONE ── */
+    #drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 44px 20px;
+      text-align: center;
+      cursor: pointer;
+      background: #f8fafc;
+      transition: all 0.2s;
+    }
+    #drop-zone:hover, #drop-zone.drag-over {
+      border-color: var(--teal);
+      background: var(--teal-light);
+    }
+    #drop-zone .icon { font-size: 42px; margin-bottom: 10px; }
+    #drop-zone h3 { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    #drop-zone p  { font-size: 12px; color: var(--muted); }
+
+    /* ── PREVIEW ── */
+    #preview-area { display: none; }
+    #preview-img {
+      width: 100%;
+      max-height: 320px;
+      object-fit: contain;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      display: block;
+      margin-bottom: 12px;
+    }
+    .btn-row { display: flex; gap: 10px; margin-bottom: 14px; }
+    .btn {
+      flex: 1; padding: 9px 0;
+      border-radius: 8px; border: 1px solid var(--border);
+      background: var(--card); color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn:hover { background: var(--bg); color: var(--text); }
+
+    /* ── ANALYZE BUTTON ── */
+    #analyze-btn {
+      width: 100%; padding: 13px 0;
+      border-radius: 10px; border: none;
+      background: linear-gradient(135deg, var(--dark2), var(--teal));
+      color: #fff; font-family: 'DM Sans', sans-serif;
+      font-size: 15px; font-weight: 700;
+      cursor: pointer; letter-spacing: 0.2px;
+      box-shadow: 0 4px 16px rgba(45,158,126,0.3);
+      transition: opacity 0.2s, transform 0.1s;
+      display: none;
+    }
+    #analyze-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    #analyze-btn:disabled { background: #b0c4d8; box-shadow: none; cursor: not-allowed; transform: none; }
+
+    /* ── SPINNER ── */
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── ERROR MESSAGE ── */
+    #error-box {
+      display: none;
+      margin-top: 14px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      background: var(--red-light);
+      border: 1px solid #fcc;
+      color: var(--red);
+      font-size: 13px;
+    }
+
+    /* ── RESULTS PANEL ── */
+    #results-panel { display: none; }
+
+    /* Confidence banner */
+    #confidence-banner {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 18px; border-radius: 10px;
+      background: var(--card);
+      margin-bottom: 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    #confidence-banner .label { font-weight: 700; font-size: 14px; }
+    #confidence-badge {
+      padding: 4px 12px; border-radius: 20px;
+      color: #fff; font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+
+    /* Section cards */
+    .section-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      margin-bottom: 14px;
+    }
+    .section-head {
+      padding: 11px 18px;
+      display: flex; align-items: center; gap: 8px;
+      font-weight: 700; font-size: 12px;
+      text-transform: uppercase; letter-spacing: 0.8px;
+      color: var(--text);
+    }
+    .section-body { padding: 14px 18px; }
+
+    /* Color themes for each section */
+    .sec-doctor .section-head   { background: var(--teal-light); border-bottom: 2px solid #b2dcd0; }
+    .sec-patient .section-head  { background: var(--blue-light);  border-bottom: 2px solid #baced8; }
+    .sec-medicine .section-head { background: var(--amber-light); border-bottom: 2px solid #e8c990; }
+    .sec-instruct .section-head { background: var(--purple-light);border-bottom: 2px solid #cdb5df; }
+
+    /* Field rows */
+    .field-row {
+      display: flex; gap: 10px; align-items: flex-start;
+      margin-bottom: 8px;
+    }
+    .field-label {
+      font-size: 11px; font-weight: 600;
+      color: var(--muted); min-width: 110px;
+      text-transform: uppercase; letter-spacing: 0.4px;
+      padding-top: 2px;
+    }
+    .field-value { font-size: 14px; color: var(--text); flex: 1; line-height: 1.5; }
+
+    /* Medicine item cards */
+    .med-item {
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid #ede0ce;
+      margin-bottom: 10px;
+      background: #fff;
+    }
+    .med-name {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 8px;
+    }
+    .med-num {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--amber); color: #fff;
+      font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .med-title { font-weight: 700; font-size: 15px; color: var(--text); }
+    .med-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3px 16px;
+      padding-left: 30px;
+    }
+    .mini-row { font-size: 12px; color: var(--text); }
+    .mini-label { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; }
+
+    /* Warning row (red highlight) */
+    .field-row.warning {
+      padding: 8px 10px;
+      background: var(--red-light);
+      border: 1px solid #fcc;
+      border-radius: 6px;
+    }
+    .field-row.warning .field-value { color: var(--red); font-weight: 600; }
+
+    /* Readability note */
+    #readability-note {
+      display: none;
+      padding: 12px 16px; border-radius: 10px;
+      background: #fffbea; border: 1px solid #f5d57a;
+      font-size: 13px; color: #7a5c00;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     HEADER
+════════════════════════════════════════════ -->
+<header>
+  <div class="header-inner">
+    <div class="header-icon">⚕</div>
+    <div>
+      <h1>MediScribe</h1>
+      <p>Prescription Intelligence System</p>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════
+     MAIN CONTENT
+════════════════════════════════════════════ -->
+<main>
+  <div class="layout">
+
+    <!-- ─── LEFT: Upload Panel ─── -->
+    <div>
+      <div class="card">
+        <div class="card-header">
+          <h2>Upload Prescription</h2>
+          <p>Photo, scan, or screenshot of handwritten prescription</p>
+        </div>
+        <div class="card-body">
+
+          <!-- Drop zone (visible when no image selected) -->
+          <div id="drop-zone" onclick="document.getElementById('file-input').click()">
+            <div class="icon">📄</div>
+            <h3>Drop prescription image here</h3>
+            <p>or click to browse — JPG, PNG, WEBP</p>
+          </div>
+
+          <!-- Preview area (visible after image selected) -->
+          <div id="preview-area">
+            <img id="preview-img" src="" alt="Prescription preview"/>
+            <div class="btn-row">
+              <button class="btn" onclick="resetUpload()">✕ Change Image</button>
+              <button class="btn" onclick="document.getElementById('file-input').click()">📁 Browse</button>
+            </div>
+          </div>
+
+          <!-- Hidden file input -->
+          <input type="file" id="file-input" accept="image/*" style="display:none"
+                 onchange="handleFileSelect(this.files[0])"/>
+
+          <!-- Analyze button (shown after image loaded) -->
+          <button id="analyze-btn" onclick="analyzeImage()">
+            🔍 Analyze Prescription
+          </button>
+
+          <!-- Error display -->
+          <div id="error-box"></div>
+        </div>
+      </div>
+    </div><!-- end left -->
+
+    <!-- ─── RIGHT: Results Panel ─── -->
+    <div id="results-panel">
+
+      <!-- Confidence Banner -->
+      <div id="confidence-banner">
+        <span class="label">✅ Prescription Analyzed</span>
+        <span id="confidence-badge">—</span>
+      </div>
+
+      <!-- Doctor Info -->
+      <div class="section-card sec-doctor">
+        <div class="section-head"><span>⚕</span> Doctor Information</div>
+        <div class="section-body" id="doctor-section"></div>
+      </div>
+
+      <!-- Patient Details -->
+      <div class="section-card sec-patient">
+        <div class="section-head"><span>👤</span> Patient Details</div>
+        <div class="section-body" id="patient-section"></div>
+      </div>
+
+      <!-- Medicines -->
+      <div class="section-card sec-medicine">
+        <div class="section-head"><span>💊</span> Medicines &amp; Dosages</div>
+        <div class="section-body" id="medicines-section"></div>
+      </div>
+
+      <!-- Instructions -->
+      <div class="section-card sec-instruct">
+        <div class="section-head"><span>📋</span> Instructions &amp; Follow-up</div>
+        <div class="section-body" id="instructions-section"></div>
+      </div>
+
+      <!-- Readability Note -->
+      <div id="readability-note"></div>
+
+    </div><!-- end results panel -->
+
+  </div><!-- end layout -->
+</main>
+
+
+<!-- ═══════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════ -->
+<script>
+  // ── State ──
+  let selectedFile = null;   // Holds the currently selected File object
+
+  // ── Drag and Drop Events ──
+
+  const dropZone = document.getElementById('drop-zone');
+
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('drag-over');
+  });
+
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('drag-over');
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileSelect(file);
+  });
+
+  // ── Handle File Selection ──
+  // Called when user picks a file via browse or drop
+  function handleFileSelect(file) {
+    if (!file) return;
+
+    // Validate: must be an image
+    if (!file.type.startsWith('image/')) {
+      showError('Please upload a valid image file (JPG, PNG, WEBP).');
+      return;
+    }
+
+    selectedFile = file;
+    clearError();
+
+    // Show image preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      document.getElementById('preview-img').src = e.target.result;
+      document.getElementById('drop-zone').style.display = 'none';
+      document.getElementById('preview-area').style.display = 'block';
+      document.getElementById('analyze-btn').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ── Reset Upload ──
+  // Clears the selected image and hides the preview
+  function resetUpload() {
+    selectedFile = null;
+    document.getElementById('file-input').value = '';
+    document.getElementById('preview-img').src = '';
+    document.getElementById('drop-zone').style.display = 'block';
+    document.getElementById('preview-area').style.display = 'none';
+    document.getElementById('analyze-btn').style.display = 'none';
+    document.getElementById('results-panel').style.display = 'none';
+    clearError();
+  }
+
+  // ── Analyze Image ──
+  // Sends the image to our Flask backend /analyze endpoint
+  async function analyzeImage() {
+    if (!selectedFile) return;
+
+    const btn = document.getElementById('analyze-btn');
+
+    // Show loading state
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Analyzing Prescription...';
+    clearError();
+
+    // Build form data with the image file
+    const formData = new FormData();
+    formData.append('prescription', selectedFile);
+
+    // POST to Flask backend
+    const response = await fetch('/analyze', {
+      method: 'POST',
+      body: formData
+    });
+
+    const result = await response.json();
+
+    // Restore button state
+    btn.disabled = false;
+    btn.innerHTML = '🔍 Analyze Prescription';
+
+    if (!result.success) {
+      showError(result.error || 'Analysis failed. Please try again.');
+      return;
+    }
+
+    // Render the extracted data in the results panel
+    renderResults(result.data);
+  }
+
+  // ── Render Results ──
+  // Populates the results panel with extracted prescription data
+  function renderResults(data) {
+    // Show results panel
+    document.getElementById('results-panel').style.display = 'block';
+
+    // ── Confidence Badge ──
+    const badge = document.getElementById('confidence-badge');
+    const conf = data.confidence || 'low';
+    badge.textContent = conf.toUpperCase() + ' CONFIDENCE';
+    badge.style.background = conf === 'high' ? '#2d9e7e' : conf === 'medium' ? '#d4821a' : '#c0392b';
+    document.getElementById('confidence-banner').style.border =
+      '1px solid ' + (conf === 'high' ? '#2d9e7e' : conf === 'medium' ? '#d4821a' : '#c0392b') + '44';
+
+    // ── Doctor Section ──
+    const doc = data.doctor || {};
+    document.getElementById('doctor-section').innerHTML = [
+      fieldRow('Name',           doc.name),
+      fieldRow('Qualification',  doc.qualification),
+      fieldRow('Clinic/Hospital',doc.clinic),
+      fieldRow('Date',           doc.date),
+      fieldRow('Reg. No.',       doc.regNo),
+    ].join('');
+
+    // ── Patient Section ──
+    const pat = data.patient || {};
+    document.getElementById('patient-section').innerHTML = [
+      fieldRow('Name',    pat.name),
+      fieldRow('Age',     pat.age),
+      fieldRow('Gender',  pat.gender),
+      fieldRow('Contact', pat.contact),
+    ].join('');
+
+    // ── Medicines Section ──
+    const meds = data.medicines || [];
+    if (meds.length === 0) {
+      document.getElementById('medicines-section').innerHTML =
+        '<p style="color:var(--muted);font-size:13px">No medicines detected.</p>';
+    } else {
+      document.getElementById('medicines-section').innerHTML =
+        meds.map((med, i) => `
+          <div class="med-item">
+            <div class="med-name">
+              <span class="med-num">${i + 1}</span>
+              <span class="med-title">${med.name || 'Unknown'}</span>
+            </div>
+            <div class="med-grid">
+              ${miniRow('Dosage',    med.dosage)}
+              ${miniRow('Frequency', med.frequency)}
+              ${miniRow('Duration',  med.duration)}
+              ${miniRow('Route',     med.route)}
+              ${med.notes ? `<div style="grid-column:1/-1">${miniRow('Notes', med.notes)}</div>` : ''}
+            </div>
+          </div>
+        `).join('');
+    }
+
+    // ── Instructions Section ──
+    const ins = data.instructions || {};
+    document.getElementById('instructions-section').innerHTML = [
+      fieldRow('General',   ins.general),
+      fieldRow('Diet',      ins.diet),
+      fieldRow('Follow-up', ins.followUp),
+      fieldRow('⚠ Warnings', ins.warnings, true),
+    ].join('');
+
+    // ── Readability Note ──
+    const noteEl = document.getElementById('readability-note');
+    if (data.readabilityNotes) {
+      noteEl.style.display = 'block';
+      noteEl.innerHTML = '<strong>📝 Readability Note:</strong> ' + data.readabilityNotes;
+    } else {
+      noteEl.style.display = 'none';
+    }
+
+    // Scroll to results
+    document.getElementById('results-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ── Helper: Render a field row ──
+  // Returns HTML for a label+value pair; skips null/undefined values
+  function fieldRow(label, value, isWarning = false) {
+    if (!value) return '';
+    return `
+      <div class="field-row${isWarning ? ' warning' : ''}">
+        <span class="field-label">${label}</span>
+        <span class="field-value">${value}</span>
+      </div>`;
+  }
+
+  // ── Helper: Render a mini row (used inside medicine cards) ──
+  function miniRow(label, value) {
+    if (!value) return '';
+    return `<div class="mini-row"><span class="mini-label">${label}:</span> ${value}</div>`;
+  }
+
+  // ── Error Helpers ──
+  function showError(msg) {
+    const el = document.getElementById('error-box');
+    el.textContent = '⚠ ' + msg;
+    el.style.display = 'block';
+  }
+
+  function clearError() {
+    const el = document.getElementById('error-box');
+    el.textContent = '';
+    el.style.display = 'none';
+  }
+</script>
+
+</body>
+</html>
