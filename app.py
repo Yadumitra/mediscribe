@@ -20,8 +20,8 @@ from groq import Groq
 # CONFIGURATION
 # ──────────────────────────────────────────────
 
-# 🔑 Paste your Groq API key here
-GROQ_API_KEY = "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"
+# Read API key from environment for safety and portability.
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
 
 # Allowed image types for upload validation
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp", "gif"}
@@ -38,7 +38,7 @@ app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = MAX_CONTENT_LENGTH
 
 # Initialize the Groq client with API key
-client = Groq(api_key=GROQ_API_KEY)
+client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 
 # Vision-capable model on Groq
 MODEL_NAME = "meta-llama/llama-4-scout-17b-16e-instruct"
@@ -148,6 +148,11 @@ def call_groq_vision(image_data_url):
         ValueError: If the model response cannot be parsed as JSON
         Exception: If the API call fails
     """
+    if not GROQ_API_KEY or client is None:
+        raise RuntimeError(
+            "Missing GROQ_API_KEY. Set it before running the app."
+        )
+
     prompt = build_extraction_prompt()
 
     response = client.chat.completions.create(
@@ -225,8 +230,23 @@ def analyze():
         # ── Step 5: Call Groq Vision API ──
         result = call_groq_vision(image_data_url)
     except Exception as err:
+        err_text = str(err)
+        err_lower = err_text.lower()
+
+        if "invalid_api_key" in err_lower or "invalid api key" in err_lower:
+            return jsonify({
+                "success": False,
+                "error": "Groq API key is invalid. Generate a new key and set GROQ_API_KEY, then restart the app.",
+            }), 401
+
+        if "missing groq_api_key" in err_lower:
+            return jsonify({
+                "success": False,
+                "error": "Missing GROQ_API_KEY. Set it in your environment before starting the server.",
+            }), 500
+
         # Return a clean API error to the frontend instead of a traceback page.
-        return jsonify({"success": False, "error": f"Analysis failed: {err}"}), 500
+        return jsonify({"success": False, "error": f"Analysis failed: {err_text}"}), 500
 
     # ── Step 6: Return success response ──
     return jsonify({"success": True, "data": result})

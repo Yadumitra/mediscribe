@@ -48,16 +48,24 @@ Current dependencies in `requirements.txt`:
 
 ## Configuration
 
-In `app.py`, the Groq key is read from the constant:
+Set your Groq API key as an environment variable before starting the app:
+
+PowerShell (Windows):
+
+```powershell
+$env:GROQ_API_KEY="your_new_groq_api_key"
+```
+
+The app reads this key at startup:
 
 ```python
-GROQ_API_KEY = "..."
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
 ```
 
 The app initializes the client as:
 
 ```python
-client = Groq(api_key=GROQ_API_KEY)
+client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 ```
 
 ## Run the App
@@ -68,6 +76,39 @@ python app.py
 
 Server starts at:
 - `http://127.0.0.1:5000`
+
+## Deploy From GitHub (Recommended)
+
+GitHub Pages cannot host this app because it runs a Python backend (`Flask`).
+Use GitHub + Render for one-click deployments from your repo.
+
+### 1) Push project to GitHub
+
+```bash
+git add .
+git commit -m "Prepare app for deployment"
+git branch -M main
+git remote add origin https://github.com/<your-username>/<your-repo>.git
+git push -u origin main
+```
+
+### 2) Deploy on Render from your GitHub repo
+
+1. Sign in to Render and choose **New +** -> **Blueprint** (or **Web Service**).
+2. Connect your GitHub repository.
+3. Render will detect `render.yaml` in this project.
+4. In Render environment variables, set `GROQ_API_KEY` to your real key.
+5. Deploy.
+
+Render uses:
+- Build command: `pip install -r requirements.txt`
+- Start command: `gunicorn app:app --bind 0.0.0.0:$PORT`
+
+### 3) After deployment
+
+- Open your Render URL and test image upload.
+- If calls fail, verify `GROQ_API_KEY` in Render settings.
+- Rotate any key that was ever committed to source history.
 
 ## How It Works
 
